@@ -1,0 +1,336 @@
+// Thrive 5 Maternal Wellness App - Database Schema
+// Based on Washington University research on infant brain development
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// USER & AUTHENTICATION MODELS
+// ==========================================
+
+// User model - supports three roles: user (mom), coach, admin
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  name          String
+  role          String    @default("user") // "user", "coach", or "admin"
+  language      String    @default("en") // Preferred language (en, es, etc.)
+  phone         String?   // Optional phone for session reminders
+
+  // Profile information (for moms)
+  dueDate       DateTime? // Expected delivery date (for pregnant mothers)
+  babyBirthDate DateTime? // Actual birth date
+  stage         String    @default("pregnancy") // "pregnancy", "newborn", "infant", "toddler"
+  householdSize Int?      // Number of people in household
+  housingType   String?   // "apartment", "house", "shelter", "other"
+  employmentStatus String? // "full-time", "part-time", "unemployed", "multiple-jobs"
+
+  // Survey results (Thrive 5 assessment)
+  surveyCompleted Boolean  @default(false)
+  moodScore       Int?     // Overall mood score
+  stimulationScore Int?    // Environmental stimulation score
+  nutritionScore   Int?    // Nutrition score
+  safetyScore      Int?    // Neighborhood safety score
+  caregivingScore  Int?    // Positive caregiving score
+  sleepScore       Int?    // Sleep/circadian score
+
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations for moms
+  progress        UserProgress[]
+  surveyResponses SurveyResponse[]
+  coachAssignment CoachAssignment? @relation("userAssignment")
+  sessions        Session[]        @relation("userSessions")
+  homework        Homework[]
+
+  // Relations for coaches
+  coachProfile       CoachProfile?
+  coachingAssignments CoachAssignment[] @relation("coachAssignments")
+  conductedSessions   Session[]         @relation("coachSessions")
+
+  @@index([role])
+  @@index([email])
+}
+
+// Coach profile - additional info for users with role="coach"
+model CoachProfile {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  bio           String?  // Coach's background and approach
+  photoUrl      String?  // Profile photo
+  specialties   String?  // JSON array of specialties (e.g., ["postpartum", "single-moms", "first-time-moms"])
+  languages     String   @default("[\"en\"]") // JSON array of languages spoken
+  caseloadLimit Int      @default(15) // Max number of active moms
+  zoomLink      String?  // Personal Zoom meeting room link
+
+  // Availability - JSON object with day/time slots
+  availability  String?  // e.g., {"monday": ["9:00-12:00", "14:00-17:00"], ...}
+
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+// ==========================================
+// COACHING SYSTEM MODELS
+// ==========================================
+
+// Coach-to-Mom assignment
+model CoachAssignment {
+  id            String   @id @default(cuid())
+  userId        String   @unique // Mom being coached
+  coachId       String   // Coach assigned
+
+  user          User     @relation("userAssignment", fields: [userId], references: [id], onDelete: Cascade)
+  coach         User     @relation("coachAssignments", fields: [coachId], references: [id], onDelete: Cascade)
+
+  status        String   @default("active") // "active", "completed", "on-hold", "transferred"
+  assignedAt    DateTime @default(now())
+  completedAt   DateTime?
+  totalSessions Int      @default(0)
+  notes         String?  // Admin notes about this assignment
+
+  @@index([coachId])
+  @@index([status])
+}
+
+// Coaching session
+model Session {
+  id            String   @id @default(cuid())
+  userId        String   // Mom
+  coachId       String   // Coach
+
+  user          User     @relation("userSessions", fields: [userId], references: [id], onDelete: Cascade)
+  coach         User     @relation("coachSessions", fields: [coachId], references: [id], onDelete: Cascade)
+
+  // Scheduling
+  scheduledAt   DateTime
+  duration      Int      @default(30) // Minutes: 30, 60, or 90
+  zoomLink      String?
+  status        String   @default("scheduled") // "scheduled", "completed", "cancelled", "no-show"
+
+  // Session content
+  thriveFocusAreas String? // JSON array of which Thrive 5 factors discussed
+  coachNotes       String? // Private notes (only coach + admin can see)
+  momNotes         String? // Mom's optional reflections after session
+  actionItems      String? // JSON array of action items assigned
+
+  // Assessment
+  riskLevel        String? // "low", "medium", "high" - coach's assessment
+  referralsMade    String? // JSON array of referrals (e.g., ["WIC", "mental health"])
+  barriersDiscussed String? // What barriers mom is facing
+  winsAndStrengths String? // Positive things to celebrate
+
+  // Summary visible to mom (coach writes this)
+  momSummary       String?
+
+  completedAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([userId])
+  @@index([coachId])
+  @@index([scheduledAt])
+  @@index([status])
+}
+
+// Homework assigned by coach
+model Homework {
+  id            String   @id @default(cuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  trackId       String?  // Optional - specific track to complete
+  contentId     String?  // Optional - specific content to review
+  customTask    String?  // Optional - custom task description
+
+  assignedAt    DateTime @default(now())
+  dueDate       DateTime?
+  completedAt   DateTime?
+  status        String   @default("assigned") // "assigned", "completed", "overdue"
+
+  @@index([userId])
+  @@index([status])
+}
+
+// ==========================================
+// CONTENT MODELS (Thrive 5 Categories)
+// ==========================================
+
+// Track categories (the 5 Thrive factors)
+model Category {
+  id          String   @id @default(cuid())
+  name        String
+  description String
+  icon        String   // Icon name for the category
+  color       String   // Primary color for the category
+  order       Int      @default(0)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  tracks      Track[]
+
+  @@index([order])
+}
+
+// Individual tracks within categories
+model Track {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  order       Int      @default(0)
+
+  // Visual properties for the node
+  positionX   Float    @default(0)
+  positionY   Float    @default(0)
+
+  // Age gating (optional)
+  minBabyAgeMonths Int? // Only show if baby is at least this old
+  maxBabyAgeMonths Int? // Only show if baby is at most this old
+  forPregnancy     Boolean @default(true) // Show during pregnancy
+
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  // Publishing status
+  status      String   @default("published") // "draft", "review", "published"
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  contents    Content[]
+  progress    UserProgress[]
+  prerequisites TrackPrerequisite[] @relation("track")
+  prerequisiteFor TrackPrerequisite[] @relation("prerequisite")
+
+  @@index([categoryId])
+  @@index([order])
+}
+
+// Prerequisites for tracks (which tracks must be completed first)
+model TrackPrerequisite {
+  id             String @id @default(cuid())
+  trackId        String
+  prerequisiteId String
+
+  track          Track  @relation("track", fields: [trackId], references: [id], onDelete: Cascade)
+  prerequisite   Track  @relation("prerequisite", fields: [prerequisiteId], references: [id], onDelete: Cascade)
+
+  @@unique([trackId, prerequisiteId])
+}
+
+// Content within tracks
+model Content {
+  id          String   @id @default(cuid())
+  title       String
+  body        String   // Main content (markdown supported)
+  contentType String   @default("article") // "article", "video", "audio", "exercise", "checklist"
+  mediaUrl    String?  // Optional URL for video/audio/image
+  duration    Int?     // Duration in minutes (for video/audio)
+  order       Int      @default(0)
+
+  // Translations
+  bodyEs      String?  // Spanish translation
+  titleEs     String?  // Spanish title
+
+  trackId     String
+  track       Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  // Publishing
+  status      String   @default("published") // "draft", "review", "published"
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([trackId])
+  @@index([order])
+}
+
+// User progress tracking
+model UserProgress {
+  id          String   @id @default(cuid())
+  userId      String
+  trackId     String
+  completed   Boolean  @default(false)
+  startedAt   DateTime @default(now())
+  completedAt DateTime?
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  track       Track    @relation(fields: [trackId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, trackId])
+  @@index([userId])
+  @@index([trackId])
+}
+
+// ==========================================
+// SURVEY MODELS
+// ==========================================
+
+// Survey questions (for Thrive 5 assessment)
+model SurveyQuestion {
+  id          String   @id @default(cuid())
+  question    String
+  questionEs  String?  // Spanish translation
+  type        String   @default("scale") // "scale", "multiChoice", "text"
+  options     String?  // JSON string for options
+  optionsEs   String?  // Spanish options
+  category    String   // "background", "stimulation", "nutrition", "safety", "caregiving", "sleep", "wellbeing"
+  order       Int      @default(0)
+
+  createdAt   DateTime @default(now())
+
+  // Relations
+  responses   SurveyResponse[]
+
+  @@index([category])
+  @@index([order])
+}
+
+// User survey responses
+model SurveyResponse {
+  id         String   @id @default(cuid())
+  userId     String
+  questionId String
+  answer     String
+
+  user       User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question   SurveyQuestion  @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, questionId])
+  @@index([userId])
+}
+
+// ==========================================
+// ANALYTICS & AUDIT MODELS
+// ==========================================
+
+// Activity log for audit trail
+model ActivityLog {
+  id          String   @id @default(cuid())
+  userId      String?  // Who performed the action (null for system actions)
+  action      String   // "login", "survey_completed", "content_viewed", "session_completed", etc.
+  targetType  String?  // "user", "session", "content", etc.
+  targetId    String?  // ID of the target
+  metadata    String?  // JSON with additional details
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([action])
+  @@index([createdAt])
+}

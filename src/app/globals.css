@@ -1,0 +1,271 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Beautiful animated gradient background */
+:root {
+  --gradient-color-1: #faf8ff;
+  --gradient-color-2: #ffe8ed;
+  --gradient-color-3: #e0f2fe;
+  --gradient-color-4: #f6f9f6;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Animated gradient background that slowly changes */
+.animated-gradient {
+  background: linear-gradient(
+    -45deg,
+    #faf8ff,
+    #ffe8ed,
+    #e0f2fe,
+    #f6f9f6,
+    #ffede5,
+    #f3edff
+  );
+  background-size: 400% 400%;
+  animation: gradientShift 30s ease infinite;
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  25% {
+    background-position: 50% 100%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  75% {
+    background-position: 50% 0%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+/* Floating orbs for extra visual interest */
+.floating-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(40px);
+  opacity: 0.6;
+  animation: floatOrb 20s ease-in-out infinite;
+}
+
+@keyframes floatOrb {
+  0%, 100% {
+    transform: translate(0, 0) scale(1);
+  }
+  25% {
+    transform: translate(20px, -30px) scale(1.1);
+  }
+  50% {
+    transform: translate(-10px, 20px) scale(0.95);
+  }
+  75% {
+    transform: translate(-20px, -10px) scale(1.05);
+  }
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(167, 139, 250, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(167, 139, 250, 0.5);
+}
+
+/* Glass morphism effect */
+.glass {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.glass-dark {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Node connections for the track visualization */
+.node-line {
+  stroke: rgba(167, 139, 250, 0.4);
+  stroke-width: 2;
+  stroke-dasharray: 5 5;
+  animation: dashMove 1s linear infinite;
+}
+
+@keyframes dashMove {
+  to {
+    stroke-dashoffset: -10;
+  }
+}
+
+/* Button hover effects */
+.btn-glow {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.btn-glow::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.3),
+    transparent
+  );
+  transition: left 0.5s ease;
+}
+
+.btn-glow:hover::before {
+  left: 100%;
+}
+
+/* Card hover animation */
+.card-lift {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card-lift:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+/* Progress bar animation */
+.progress-fill {
+  animation: progressGrow 1s ease-out;
+}
+
+@keyframes progressGrow {
+  from {
+    width: 0;
+  }
+}
+
+/* Fade in animation */
+.fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Pulse animation for nodes */
+.node-pulse {
+  animation: nodePulse 2s ease-in-out infinite;
+}
+
+@keyframes nodePulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(167, 139, 250, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 15px rgba(167, 139, 250, 0);
+  }
+}
+
+/* Survey scale styling */
+.scale-option {
+  transition: all 0.2s ease;
+}
+
+.scale-option:hover {
+  transform: scale(1.1);
+}
+
+.scale-option.selected {
+  transform: scale(1.15);
+}
+
+/* Markdown content styling */
+.prose-maternal {
+  color: #4a5568;
+}
+
+.prose-maternal h1 {
+  color: #6b46c1;
+  font-size: 1.875rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+}
+
+.prose-maternal h2 {
+  color: #805ad5;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+}
+
+.prose-maternal h3 {
+  color: #9f7aea;
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-top: 1.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.prose-maternal p {
+  margin-bottom: 1rem;
+  line-height: 1.75;
+}
+
+.prose-maternal ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.prose-maternal li {
+  margin-bottom: 0.5rem;
+}
+
+.prose-maternal blockquote {
+  border-left: 4px solid #d6c4ff;
+  padding-left: 1rem;
+  font-style: italic;
+  color: #6b46c1;
+  margin: 1.5rem 0;
+  background: rgba(214, 196, 255, 0.1);
+  padding: 1rem;
+  border-radius: 0 0.5rem 0.5rem 0;
+}
